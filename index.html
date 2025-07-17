@@ -49,41 +49,41 @@
             height: 100%;
             border-radius: 50%;
             box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: none;
+            transition: transform 4s cubic-bezier(0.3, 0.1, 0.1, 1);
         }
+        /* 改进后的指针样式 - 位于中心 */
         .pointer {
             position: absolute;
-            top: -5px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
+            transform: translate(-50%, -50%);
             width: 40px;
-            height: 60px;
-            background: linear-gradient(to bottom, #ff3b3b, #b30000);
-            border-radius: 20px 20px 0 0;
+            height: 70px; /* 增加高度使三角形突出 */
             z-index: 10;
-            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
         }
         .pointer:before {
             content: '';
             position: absolute;
-            top: 100%;
+            top: 0;
             left: 50%;
             transform: translateX(-50%);
-            width: 25px;
-            height: 15px;
-            background: linear-gradient(to bottom, #d10000, #ff3b3b);
-            border-radius: 0 0 15px 15px;
+            width: 40px;
+            height: 40px;
+            background: #e74c3c;
+            border-radius: 50%;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
         }
         .pointer:after {
             content: '';
             position: absolute;
-            top: 70%;
+            top: 40px; /* 从圆形底部开始 */
             left: 50%;
             transform: translateX(-50%);
-            width: 60px;
-            height: 5px;
-            background: #ffcc00;
-            border-radius: 5px;
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-top: 30px solid #e74c3c; /* 三角形朝下 */
         }
         .controls {
             display: flex;
@@ -129,7 +129,7 @@
             margin-bottom: 10px;
         }
         #result {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: bold;
             color: #ff6b6b;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -374,15 +374,13 @@
             // 初始选项（如果localStorage中没有则使用默认值）
             let options = JSON.parse(localStorage.getItem('wheelOptions')) || 
                          ['洗碗', '拖地', '做饭', '倒垃圾', '取快递', '洗衣服'];
-            let currentRotation = 0; // 跟踪当前旋转角度
             let isSpinning = false;
+            let currentRotation = 0; // 记录当前旋转角度
             let editingIndex = -1; // 当前编辑的选项索引
-            
-            // 扩展颜色数组支持10个选项
             const colors = [
                 '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
                 '#9966FF', '#FF9F40', '#8AC249', '#E74C3C',
-                '#FF5252', '#2196F3'
+                '#FF5252', '#2196F3' // 增加两种颜色支持10个选项
             ];
             
             // 渲染选项列表
@@ -462,7 +460,7 @@
                     ctx.restore();
                 }
                 
-                // 绘制中心圆
+                // 绘制中心圆（白色）
                 ctx.beginPath();
                 ctx.arc(center, center, 20, 0, Math.PI * 2);
                 ctx.fillStyle = '#ffffff';
@@ -566,7 +564,7 @@
                 });
             }
             
-            // 转盘旋转动画 - 解决结果不一致问题
+            // 转盘旋转动画 - 修复结果不一致问题
             function spinWheel() {
                 if (isSpinning || options.length < 2 || options.length > 10) return;
                 
@@ -574,33 +572,39 @@
                 spinBtn.disabled = true;
                 resultDiv.textContent = '抽奖中...';
                 
-                // 重置转盘位置（在开始新旋转前重置角度为0）
+                // 计算随机停止位置（增加不可预测性）
+                const spins = 5 + Math.random() * 2; // 5-7圈
+                const randomIndex = Math.floor(Math.random() * options.length);
+                const anglePerOption = 360 / options.length;
+                
+                // 关键修复：精确计算停止角度确保指针指向正确区域
+                // 指针位于顶部（12点钟方向），所以选项0的中心应该在90°（顶部）
+                // 选项索引 i 的中心在角度 = 90° - i * (360 / n)
+                const targetCenterAngle = 90 - anglePerOption * randomIndex;
+                
+                // 停止角度 = 多圈旋转 + 目标中心角度
+                const stopAngle = 360 * spins + targetCenterAngle;
+                
+                // 重置转盘位置（无动画）
                 canvas.style.transition = 'none';
-                canvas.style.transform = 'rotate(0deg)';
+                canvas.style.transform = `rotate(0deg)`;
                 currentRotation = 0;
                 
-                // 等待浏览器渲染重置后的位置
+                // 确保重绘完成
                 setTimeout(() => {
-                    // 计算随机停止位置
-                    const spins = 5 + Math.random() * 2; // 5-7圈
-                    const randomIndex = Math.floor(Math.random() * options.length);
-                    
-                    // 每个选项的度数间隔
-                    const optionAngle = 360 / options.length;
-                    
-                    // 计算目标选项应该停止的位置（加上额外旋转圈数）
-                    // 使目标选项的中心点停在指针位置（-90度偏移）
-                    const targetRotation = spins * 360 + 360 - (randomIndex * optionAngle + optionAngle / 2) + 90;
-                    
-                    // 应用旋转动画
+                    // 应用平滑旋转
                     canvas.style.transition = 'transform 4s cubic-bezier(0.3, 0.1, 0.1, 1)';
-                    canvas.style.transform = `rotate(${targetRotation}deg)`;
-                    currentRotation = targetRotation;
+                    canvas.style.transform = `rotate(${stopAngle}deg)`;
+                    currentRotation = stopAngle % 360;
                     
                     // 4秒后显示结果
                     setTimeout(() => {
-                        // 显示结果动画
-                        resultDiv.textContent = options[randomIndex];
+                        // 关键修复：根据实际旋转角度计算当前选项索引
+                        const normalizedAngle = (360 - currentRotation % 360 + 90) % 360;
+                        const currentIndex = Math.floor(normalizedAngle / anglePerOption) % options.length;
+                        
+                        // 显示结果
+                        resultDiv.textContent = options[currentIndex];
                         resultDiv.style.animation = 'bounce 0.8s';
                         
                         setTimeout(() => {
