@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>幸运大转盘</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .title {
+            color: white;
+            font-size: 2.2rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+        .subtitle {
+            color: rgba(255,255,255,0.9);
+            font-size: 1.1rem;
+            margin-top: 8px;
+            font-weight: 300;
+        }
+        .wheel-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            margin: 0 auto;
+        }
+        #wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: none;
+        }
+        .pointer {
+            position: absolute;
+            top: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 60px;
+            background: linear-gradient(to bottom, #ff3b3b, #b30000);
+            border-radius: 20px 20px 0 0;
+            z-index: 10;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.3);
+        }
+        .pointer:before {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 25px;
+            height: 15px;
+            background: linear-gradient(to bottom, #d10000, #ff3b3b);
+            border-radius: 0 0 15px 15px;
+        }
+        .pointer:after {
+            content: '';
+            position: absolute;
+            top: 70%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 5px;
+            background: #ffcc00;
+            border-radius: 5px;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        .action-btn {
+            padding: 14px 40px;
+            font-size: 1.2rem;
+            background: #ff9f43;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(255, 159, 67, 0.4);
+            transition: all 0.3s ease;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .action-btn:hover {
+            background: #ff7b0e;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(255, 123, 14, 0.5);
+        }
+        .action-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .result-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+            text-align: center;
+            min-height: 120px;
+        }
+        .result-title {
+            color: #6a11cb;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
+        }
+        #result {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 50px;
+            padding: 10px 0;
+            transition: all 0.5s ease;
+        }
+        .result-hint {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-top: 10px;
+        }
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+        }
+        .panel-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        .input-group {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        .input-group input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px 0 0 8px;
+            font-size: 1rem;
+            outline: none;
+        }
+        .input-group input:focus {
+            border-color: #6a11cb;
+        }
+        .add-btn {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .add-btn:hover {
+            background: #4d0d9c;
+        }
+        .update-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: none;
+        }
+        .update-btn:hover {
+            background: #2980b9;
+        }
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            padding: 0 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: none;
+        }
+        .cancel-btn:hover {
+            background: #7f8c8d;
+        }
+        .options-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+            animation: fadeIn 0.4s;
+        }
+        .option-text {
+            font-size: 1.1rem;
+            word-break: break-all;
+            flex: 1;
+        }
+        .option-buttons {
+            display: flex;
+            margin-left: 10px;
+        }
+        .edit-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin-right: 5px;
+            min-width: 50px;
+        }
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            min-width: 50px;
+        }
+        .presets {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .preset-btn {
+            background: #1abc9c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.3s;
+        }
+        .preset-btn:hover {
+            background: #16a085;
+        }
+        .hint {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-top: 5px;
+            text-align: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-15px);}
+            60% {transform: translateY(-10px);}
+        }
+        @keyframes highlight {
+            0% { background-color: #ffffcc; }
+            100% { background-color: #f8f9fa; }
+        }
+        @media (max-width: 500px) {
+            .wheel-container {
+                width: 280px;
+                height: 280px;
+            }
+            .presets {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .title {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">幸运大转盘</h1>
+            <p class="subtitle">自定义选项，随机抽取解决你的选择困难症！</p>
+        </div>
+        
+        <div class="wheel-container">
+            <canvas id="wheel" width="320" height="320"></canvas>
+            <div class="pointer"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="spinBtn" class="action-btn">开始抽奖</button>
+        </div>
+        
+        <div class="result-container">
+            <div class="result-title">抽奖结果</div>
+            <div id="result">等待抽奖...</div>
+            <div class="result-hint">结果会显示在转盘指针所指区域</div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-title">自定义抽奖选项</div>
+            <div class="input-group">
+                <input type="text" id="newOption" placeholder="请输入选项，如：洗碗、吃饭" maxlength="20">
+                <button id="updateOptionBtn" class="update-btn">更新</button>
+                <button id="cancelBtn" class="cancel-btn">取消</button>
+                <button id="addOptionBtn" class="add-btn">添加</button>
+            </div>
+            <div class="hint">提示：至少2个选项才能开始抽奖，最多支持10个选项</div>
+            
+            <div class="options-list" id="optionsList">
+                <!-- 选项列表动态生成 -->
+            </div>
+        </div>
+        
+        <div class="panel">
+            <div class="panel-title">常用预设</div>
+            <div class="presets">
+                <button class="preset-btn" data-preset="家务分配">家务分配</button>
+                <button class="preset-btn" data-preset="每日午餐">每日午餐</button>
+                <button class="preset-btn" data-preset="旅游地点">旅游地点</button>
+                <button class="preset-btn" data-preset="聚餐地点">聚餐地点</button>
+                <button class="preset-btn" data-preset="周末活动">周末活动</button>
+                <button class="preset-btn" data-preset="学习任务">学习任务</button>
+                <button class="preset-btn" data-preset="兴趣爱好">兴趣爱好</button>
+                <button class="preset-btn" data-preset="电影选择">电影选择</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 转盘元素和上下文
+            const canvas = document.getElementById('wheel');
+            const ctx = canvas.getContext('2d');
+            const spinBtn = document.getElementById('spinBtn');
+            const resultDiv = document.getElementById('result');
+            const optionsList = document.getElementById('optionsList');
+            const newOptionInput = document.getElementById('newOption');
+            const addOptionBtn = document.getElementById('addOptionBtn');
+            const updateOptionBtn = document.getElementById('updateOptionBtn');
+            const cancelBtn = document.getElementById('cancelBtn');
+            
+            // 初始选项（如果localStorage中没有则使用默认值）
+            let options = JSON.parse(localStorage.getItem('wheelOptions')) || 
+                         ['洗碗', '拖地', '做饭', '倒垃圾', '取快递', '洗衣服'];
+            let currentRotation = 0; // 跟踪当前旋转角度
+            let isSpinning = false;
+            let editingIndex = -1; // 当前编辑的选项索引
+            
+            // 扩展颜色数组支持10个选项
+            const colors = [
+                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+                '#9966FF', '#FF9F40', '#8AC249', '#E74C3C',
+                '#FF5252', '#2196F3'
+            ];
+            
+            // 渲染选项列表
+            function renderOptionsList() {
+                optionsList.innerHTML = '';
+                options.forEach((option, index) => {
+                    const optionElement = document.createElement('div');
+                    optionElement.className = 'option-item';
+                    optionElement.innerHTML = `
+                        <div class="option-text">${index + 1}. ${option}</div>
+                        <div class="option-buttons">
+                            <button class="edit-btn" data-index="${index}">修改</button>
+                            <button class="remove-btn" data-index="${index}">删除</button>
+                        </div>
+                    `;
+                    optionsList.appendChild(optionElement);
+                });
+                
+                // 设置转盘
+                drawWheel();
+                
+                // 更新按钮状态
+                spinBtn.disabled = options.length < 2 || options.length > 10;
+            }
+            
+            // 绘制转盘
+            function drawWheel() {
+                const center = canvas.width / 2;
+                const radius = canvas.width / 2;
+                
+                // 清除画布
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                if (options.length === 0) return;
+                
+                // 计算每个扇形的角度
+                const anglePerOption = (Math.PI * 2) / options.length;
+                
+                // 绘制每个扇形
+                for (let i = 0; i < options.length; i++) {
+                    const startAngle = i * anglePerOption;
+                    const endAngle = (i + 1) * anglePerOption;
+                    
+                    // 绘制扇形
+                    ctx.beginPath();
+                    ctx.moveTo(center, center);
+                    ctx.arc(center, center, radius, startAngle, endAngle);
+                    ctx.closePath();
+                    ctx.fillStyle = colors[i % colors.length];
+                    ctx.fill();
+                    ctx.stroke();
+                    
+                    // 绘制文字
+                    ctx.save();
+                    ctx.translate(center, center);
+                    ctx.rotate(startAngle + anglePerOption / 2);
+                    ctx.textAlign = 'right';
+                    ctx.fillStyle = 'white';
+                    ctx.font = 'bold 14px Arial';
+                    
+                    // 确保文字不超出扇形区域
+                    const maxTextWidth = radius - 30;
+                    let text = options[i];
+                    let metrics = ctx.measureText(text);
+                    
+                    // 如果文字太长，进行截断
+                    while (metrics.width > maxTextWidth && text.length > 2) {
+                        text = text.substring(0, text.length - 1);
+                        metrics = ctx.measureText(text + '...');
+                    }
+                    
+                    if (text.length < options[i].length) {
+                        text += '...';
+                    }
+                    
+                    ctx.fillText(text, radius - 15, 5);
+                    ctx.restore();
+                }
+                
+                // 绘制中心圆
+                ctx.beginPath();
+                ctx.arc(center, center, 20, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffffff';
+                ctx.fill();
+                ctx.strokeStyle = '#2c3e50';
+                ctx.stroke();
+            }
+            
+            // 添加新选项
+            function addOption(optionText) {
+                if (!optionText) return;
+                
+                if (options.length >= 10) {
+                    alert('最多只能添加10个选项！');
+                    return;
+                }
+                
+                if (options.includes(optionText)) {
+                    alert('该选项已经存在！');
+                    return;
+                }
+                
+                options.push(optionText);
+                newOptionInput.value = '';
+                
+                // 保存到localStorage
+                localStorage.setItem('wheelOptions', JSON.stringify(options));
+                
+                // 重新渲染列表
+                renderOptionsList();
+            }
+            
+            // 更新选项
+            function updateOption(optionText) {
+                if (!optionText) return;
+                
+                if (editingIndex === -1) return;
+                
+                options[editingIndex] = optionText;
+                
+                // 保存到localStorage
+                localStorage.setItem('wheelOptions', JSON.stringify(options));
+                
+                // 重新渲染列表
+                renderOptionsList();
+                
+                // 重置编辑状态
+                resetEditState();
+            }
+            
+            // 删除选项
+            function removeOption(index) {
+                if (options.length <= 2) {
+                    alert('至少需要2个选项才能进行抽奖！');
+                    return;
+                }
+                
+                options.splice(index, 1);
+                
+                // 保存到localStorage
+                localStorage.setItem('wheelOptions', JSON.stringify(options));
+                
+                // 重新渲染列表
+                renderOptionsList();
+                
+                // 重置编辑状态
+                resetEditState();
+            }
+            
+            // 设置编辑状态
+            function setEditState(index) {
+                editingIndex = index;
+                newOptionInput.value = options[index];
+                
+                // 显示更新和取消按钮
+                addOptionBtn.style.display = 'none';
+                updateOptionBtn.style.display = 'block';
+                cancelBtn.style.display = 'block';
+                
+                // 高亮正在编辑的项
+                const items = document.querySelectorAll('.option-item');
+                if (items[index]) {
+                    items[index].style.animation = 'highlight 1.5s forwards';
+                }
+            }
+            
+            // 重置编辑状态
+            function resetEditState() {
+                editingIndex = -1;
+                newOptionInput.value = '';
+                
+                // 显示添加按钮
+                addOptionBtn.style.display = 'block';
+                updateOptionBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                
+                // 移除高亮
+                const items = document.querySelectorAll('.option-item');
+                items.forEach(item => {
+                    item.style.animation = 'none';
+                });
+            }
+            
+            // 转盘旋转动画 - 解决结果不一致问题
+            function spinWheel() {
+                if (isSpinning || options.length < 2 || options.length > 10) return;
+                
+                isSpinning = true;
+                spinBtn.disabled = true;
+                resultDiv.textContent = '抽奖中...';
+                
+                // 重置转盘位置（在开始新旋转前重置角度为0）
+                canvas.style.transition = 'none';
+                canvas.style.transform = 'rotate(0deg)';
+                currentRotation = 0;
+                
+                // 等待浏览器渲染重置后的位置
+                setTimeout(() => {
+                    // 计算随机停止位置
+                    const spins = 5 + Math.random() * 2; // 5-7圈
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    
+                    // 每个选项的度数间隔
+                    const optionAngle = 360 / options.length;
+                    
+                    // 计算目标选项应该停止的位置（加上额外旋转圈数）
+                    // 使目标选项的中心点停在指针位置（-90度偏移）
+                    const targetRotation = spins * 360 + 360 - (randomIndex * optionAngle + optionAngle / 2) + 90;
+                    
+                    // 应用旋转动画
+                    canvas.style.transition = 'transform 4s cubic-bezier(0.3, 0.1, 0.1, 1)';
+                    canvas.style.transform = `rotate(${targetRotation}deg)`;
+                    currentRotation = targetRotation;
+                    
+                    // 4秒后显示结果
+                    setTimeout(() => {
+                        // 显示结果动画
+                        resultDiv.textContent = options[randomIndex];
+                        resultDiv.style.animation = 'bounce 0.8s';
+                        
+                        setTimeout(() => {
+                            resultDiv.style.animation = '';
+                            isSpinning = false;
+                            spinBtn.disabled = false;
+                        }, 1000);
+                    }, 4000);
+                }, 10);
+            }
+            
+            // 事件监听
+            addOptionBtn.addEventListener('click', () => {
+                addOption(newOptionInput.value.trim());
+            });
+            
+            updateOptionBtn.addEventListener('click', () => {
+                updateOption(newOptionInput.value.trim());
+            });
+            
+            cancelBtn.addEventListener('click', () => {
+                resetEditState();
+            });
+            
+            newOptionInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    if (editingIndex !== -1) {
+                        updateOption(newOptionInput.value.trim());
+                    } else {
+                        addOption(newOptionInput.value.trim());
+                    }
+                }
+            });
+            
+            optionsList.addEventListener('click', (e) => {
+                if (e.target.classList.contains('edit-btn')) {
+                    const index = parseInt(e.target.dataset.index);
+                    setEditState(index);
+                } else if (e.target.classList.contains('remove-btn')) {
+                    const index = parseInt(e.target.dataset.index);
+                    removeOption(index);
+                }
+            });
+            
+            spinBtn.addEventListener('click', spinWheel);
+            
+            // 预设事件
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const presetName = btn.dataset.preset;
+                    switch(presetName) {
+                        case '家务分配':
+                            options = ['洗碗', '拖地', '做饭', '倒垃圾', '洗衣服'];
+                            break;
+                        case '每日午餐':
+                            options = ['拉面', '米饭', '饺子', '披萨', '三明治', '沙拉'];
+                            break;
+                        case '旅游地点':
+                            options = ['海边', '爬山', '游乐园', '博物馆', '露营', '城市观光'];
+                            break;
+                        case '聚餐地点':
+                            options = ['川菜馆', '粤菜馆', '日料', '西餐厅', '火锅店', '韩国烤肉'];
+                            break;
+                        case '周末活动':
+                            options = ['看电影', '运动', '逛街', '读书', '学习', '玩游戏'];
+                            break;
+                        case '学习任务':
+                            options = ['数学', '英语', '编程', '设计', '历史', '写作'];
+                            break;
+                        case '兴趣爱好':
+                            options = ['摄影', '绘画', '音乐', '烹饪', '园艺', '手工'];
+                            break;
+                        case '电影选择':
+                            options = ['科幻片', '喜剧片', '动作片', '爱情片', '恐怖片', '纪录片'];
+                            break;
+                    }
+                    
+                    // 保存到localStorage
+                    localStorage.setItem('wheelOptions', JSON.stringify(options));
+                    
+                    // 重新渲染列表
+                    renderOptionsList();
+                    
+                    // 重置编辑状态
+                    resetEditState();
+                });
+            });
+            
+            // 初始化
+            renderOptionsList();
+        });
+    </script>
+</body>
+</html>
